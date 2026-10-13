@@ -13,7 +13,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/display.h>
 #include <zmk/usb.h>
 
-#include "animation.h"
+#include "../custom/custom.h"
 #include "battery.h"
 #include "output.h"
 #include "screen_peripheral.h"
@@ -49,6 +49,7 @@ static void set_battery_status(struct zmk_widget_screen *widget,
     widget->state.battery = state.level;
 
     draw_top(widget->obj, &widget->state);
+    custom_peripheral_update(&widget->state);
 }
 
 static void battery_status_update_cb(struct battery_status_state state) {
@@ -88,6 +89,7 @@ static void set_connection_status(struct zmk_widget_screen *widget,
     widget->state.connected = state.connected;
 
     draw_top(widget->obj, &widget->state);
+    custom_peripheral_update(&widget->state);
 }
 
 static void output_status_update_cb(struct peripheral_status_state state) {
@@ -113,7 +115,7 @@ int zmk_widget_screen_init(struct zmk_widget_screen *widget, lv_obj_t *parent) {
     lv_obj_align(top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_canvas_set_buffer(top, widget->cbuf, CANVAS_SIZE, CANVAS_SIZE, CANVAS_COLOR_FORMAT);
 
-    draw_animation(widget->obj);
+    custom_peripheral_init(widget->obj);
 
     sys_slist_append(&widgets, &widget->node);
     widget_battery_status_init();

@@ -1,3 +1,4 @@
+#include <string.h>
 #include <zephyr/kernel.h>
 
 #include <zephyr/logging/log.h>
@@ -23,7 +24,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include "output.h"
 #include "profile.h"
 #include "screen.h"
-#include "wpm.h"
+#include "../custom/custom.h"
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
@@ -47,8 +48,8 @@ static void draw_middle(lv_obj_t *widget, const struct status_state *state) {
     lv_obj_t *canvas = lv_obj_get_child(widget, 1);
     fill_background(canvas);
 
-    // Draw widgets
-    draw_wpm_status(canvas, state);
+    // Draw custom/central
+    custom_central_draw(canvas, state);
 
     // Rotate for horizontal display
     rotate_canvas(canvas);
@@ -174,11 +175,13 @@ ZMK_SUBSCRIPTION(widget_output_status, zmk_ble_active_profile_changed);
  * WPM status
  **/
 
+struct wpm_status_state {
+    uint8_t wpm;
+};
+
 static void set_wpm_status(struct zmk_widget_screen *widget, struct wpm_status_state state) {
-    for (int i = 0; i < 9; i++) {
-        widget->state.wpm[i] = widget->state.wpm[i + 1];
-    }
-    widget->state.wpm[9] = state.wpm;
+    memmove(widget->state.wpm, widget->state.wpm + 1, sizeof(widget->state.wpm) - 1);
+    widget->state.wpm[ARRAY_SIZE(widget->state.wpm) - 1] = state.wpm;
 
     draw_middle(widget->obj, &widget->state);
 }
@@ -188,7 +191,7 @@ static void wpm_status_update_cb(struct wpm_status_state state) {
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) { set_wpm_status(widget, state); }
 }
 
-struct wpm_status_state wpm_status_get_state(const zmk_event_t *eh) {
+static struct wpm_status_state wpm_status_get_state(const zmk_event_t *eh) {
     return (struct wpm_status_state){.wpm = zmk_wpm_get_state()};
 };
 
